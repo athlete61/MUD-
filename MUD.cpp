@@ -28,7 +28,14 @@ void Drugs::show()
     cout << " 价格: " << price << endl;
 }
 
-void Player::hurt(double ATK)
+void Store::show()
+{
+    cout << "商品有：\n";
+    for(int i = 0; i < this -> getLength(); i++)
+        (this->getContent(i)) -> show();
+}
+
+void Player::hurt(double ATK,double MD)
 {
     if(isdead) 
     {
@@ -42,9 +49,11 @@ void Player::hurt(double ATK)
         
     }
     if( rand()%100 > Dodge )
-        NHP -= ATK*(1.0 - physicalExsistance);
+        NHP -= (ATK*(1.0 - physicalExsistance) + magicDamage); //受到伤害
+    if(immuneTimes != 0) 
+        NHP += magicDamage;  //是否免疫中毒
     if(NHP <= 0)
-        isdead = true; 
+        isdead = true; //是否死亡
 }
 
 void Player::showBag()
