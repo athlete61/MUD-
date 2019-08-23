@@ -1,160 +1,138 @@
-#ifndef MUD_H
-#define NUD_H
-#include<vector>
-#include<string>
-#include<ctime>
-#include<iostream>
-using namespace std;
+#include"MUD.h"
 
-class Role {
-	protected:
-		string name;
-		double MHP;
-        double NHP;           //当前生命值
-		double Wealth;        //玩家表示拥有的金币，怪物表示死后掉落的金币
-		double ATK;           //攻击力
-		double Dodge;         //闪避
-		bool isToxic;         //中毒与否
-        double experience = 0;    //玩家表示该等级的当前经验值，怪物表示死后奖励给玩家的经验值
-        bool isdead = false;       
+void Weapons::show()
+{
+    cout << "武器: " << name << " 价格: " << price << " 攻击力+" << ATK << 
+    " 技能伤害+" << magicDamage << endl;
+}
 
-	public:
-		Role(string name):
-                name(name),MHP(100),NHP(100),Wealth(0),ATK(10),Dodge(0){}
-        double& getExperience(){return experience;}
-        double& getWealth(){return Wealth;}
-        virtual ~Role() = 0;                //虚基类
-};
-class Player;
-class Goods{                        //物品基类
-    protected:
-        string name;
-        double price;
-        enum Type{weapons,armors,drugs};//枚举以区分表示物品类型
-        int type;//具体的类型
-        /*string weaponsOfMname[8] = {"破旧的铁剑","铁剑","阔刀","诅咒之刃","奥术权杖","白银之锋","雷霆战矛","神圣法杖"};
-        string armorsOfMname[4] = {"布甲","先锋盾","赤红甲","冰霜之盾"};
-        string weaponsOfMname[2] = {"淬毒战刃","死神镰刀"};
-        string armorsOfSname[2] = {"先祖战甲","精钢甲"};
-        string jewelry[2] = {"灵魂之戒","玲珑心"};*/
-    public:
-        Goods(string name,int type,double price = 0):name(name),price(price),type(type){}
-        double getPrice(){return price;}
-        string getName(){return name;}
-        int getType(){return type;}
-        void soldBy(Player& p){p.getWealth() += price;}
-        void picked(Player* p){p -> pick(this);}
+void Armors::show()
+{
+    cout << "防具:" << name <<  " 价格: " << price << " 生命值+" << HP << 
+    " 物理抗性+" << physicalExsistance << " 闪避+" << dodge << endl;
+}
 
-        virtual void useTo(Player& p) = 0;
-        virtual void show() = 0;
-};
+void Drugs::show()
+{
+    switch(typeOfDrug)
+    {
+        case life:     cout << "生命药剂 生命值+50";
+                       break;
+        case madness:  cout << "狂暴药剂 攻击力+20";
+                       break;
+        case cleansing:cout << "净化药剂 解除中毒状态";
+                       break;
+        case holy:     cout << "圣灵药剂 免疫中毒5回合";
+                       break;
+    }
+    cout << " 价格: " << price << endl;
+}
 
-class Weapons: public Goods{
-    private:
-        double ATK;                 //攻击加成
-        string magicName;           //法术名称
-        double magicDamage;          //法术伤害
-    public:
-        Weapons(string name, int type, double atk, double price = 0, string mName = " ", 
-                double mDamage = 0):
-                Goods(name,type,price),
-                ATK(atk),magicName(mName),magicDamage(mDamage){}
-        double getATK(){return ATK;}
-        double getMD(){return magicDamage;}
-        void useTo(Player& p){p.use(this);}  //被角色使用
+void Store::show()
+{
+    cout << "商品有：\n";
+    for(int i = 0; i < this -> getLength(); i++)
+        (this->getContent(i)) -> show();
+}
 
-        void show();  //显示属性      
-};
+void Player::hurt(double ATK,double MD)
+{
+    if(isdead) 
+    {
+        cout << "您的角色已经死亡，是否花费200金币复活？(Y or N)\n";
+        char choice;
+        cin >> choice;
+        if(choice == 'Y')
+            NHP = MHP;
+        else
+            cout << "游戏结束！谢谢\n";
+        
+    }
+    if( rand()%100 > Dodge )
+        NHP -= (ATK*(1.0 - physicalExsistance) + magicDamage); //受到伤害
+    if(immuneTimes != 0) 
+        NHP += magicDamage;  //是否免疫中毒
+    if(NHP <= 0)
+        isdead = true; //是否死亡
+}
 
-class Armors: public Goods{
-    private:
-        double HP;//生命值加成
-        double physicalExsistance;//物理抗性
-        double dodge; //闪避
-    public:
-        Armors(string name,int type,double Hp, double PE, double price = 0, double dodge = 0):
-                Goods(name,type,price),HP(Hp),physicalExsistance(PE),dodge(dodge){}
-        void useTo(Player& p){p.use(this);} //被角色使用 
-        double getHP(){return HP;}
-        double getPE(){return physicalExsistance;}
-        double getDodge(){return dodge;}
+void Player::showBag()
+{
+    for(int i = 0; i < this->getLength(); i++)
+    {
+        (this->getContent(i)) -> show();
+    }
+}
 
-        void show();  //显示属性
+void Player::use(Weapons* w)
+{
+    if(!isWearingWeapon)
+    {
+        ATK += w -> getATK();
+        magicDamage += w -> getMD();
+        isWearingWeapon = true;
+    }
+}
 
-};
+void Player::use(Armors* a)
+{
+    if(!isWearingArmor)
+    {
+        MHP += a -> getHP();
+        NHP = MHP;
+        physicalExsistance += a ->getPE();
+        Dodge += a -> getDodge();
+        isWearingArmor = true;
+    }
+}
 
-class Drugs:public Goods{
-    private:
-        enum Type{life,madness,cleansing,holy};//药剂四种类型：生命，狂暴，净化，圣灵
-                            //分别为生命＋20，攻击+15，消除异常状态（中毒），免疫异常状态5回合
-        int typeOfDrug;
-    public:
-        Drugs(string name,int type,int typeOfdrug,double price = 0):
-            Goods(name,type,price),typeOfDrug(typeOfdrug){}
-        void useTo(Player& p){p.use(this);}  //被角色使用
-        int getType(){return typeOfDrug;}
+void Player::use(Drugs* d)
+{
+    switch(d -> getType())
+    {
+        case life:     NHP += 50;
+                       break;
+        case madness:  ATK += 20;
+                       break;
+        case cleansing:isToxic = false;
+                       break;
+        case holy:     immuneTimes = 5;
+                       break;
+    }
+}
 
-        void show();  //展示功效
-};
-class Monster;
-class Player: public Role{           //玩家类
-    private:
-        int level;                      //玩家等级          
-        vector<Goods*> bag;             //玩家的背包
-        double physicalExsistance;      //物理抗性
-        int immuneTimes = 0;
-        bool isWearingWeapon = false;   //是否已穿戴装备
-        bool isWearingArmor = false;    //同上
-        double magicDamage = 0;         //法术伤害
-        enum Type{life,madness,cleansing,holy}; //药品类型
-    public:
-        Player(string name):Role(name), level(1),physicalExsistance(0){}
-        void pick(Goods* g){bag.push_back(g);}
-        double getDodge(){return Dodge;}
-        void attack(Monster& m){m.hurt(ATK + magicDamage,this);}
-        int getLength(){return bag.size();}
-        Goods* getContent(int n){return bag[n];}
+void Monster::hurt(double ATK,Player* p)
+{
+    if(isdead)
+    {    
+        cout << name << "已被击杀!";
+        if(glevel != boss)
+        {
+            if(rand()%100 > 49)                   //50%概率掉落装备
+            {
+                int base;
+                cout << "你真幸运！对方掉落了一件装备\n";
+                if(glevel = low)                         //根据怪物类别以掉落不同的装备
+                    base = 6;
+                else if(glevel = high) 
+                    base = 5;
+                Goods* g = this -> reward( rand() % base) ;
+                g -> show();
+                cout << "是否将其放入背包？(enter Y for yes & N for no)\n";// 玩家是否捡起怪物掉落的装别
+                char choice;
+                if(choice == 'Y')
+                    g -> picked(p);
 
-        void hurt(double ATK){};
-        void showBag();
-        void use(Weapons* w);
-        void use(Armors* a);
-        void use(Drugs* d);
-};
-
-class Monster: public Role{
-    private:
-        enum Type{weapons,armors,drugs};
-        enum goodsLevel{low,high,boss};
-        int glevel;
-        vector<Goods*> lowReward = {
-            new Weapons("铁剑",weapons,7,75), new Weapons("阔刀",weapons,11,90),
-            new Weapons("诅咒之刃",weapons,13,100), new Weapons("奥术权杖",weapons,12,95),
-            new Armors("布甲",armors,10,15,30), new Armors("先锋盾",armors,30,15,80)
-        };
-        vector<Goods*> highReward = {
-            new Weapons("白银之锋",weapons,30,300), new Weapons("雷霆战矛",weapons,35,450,"技能:触电",10),
-            new Weapons("神圣法杖",weapons,30,500,"技能:秘术",15),
-            new Armors("赤红甲",200,0.25,600), new Armors("冰霜之盾",150,0.25,500,15)
-        };
-    public:
-        Monster(string name,int level):Role(name),glevel(level){
-            if(glevel = low)
-                experience = 50 + rand() % 50;
-            else if(glevel = high)
-                experience = 300 + rand() % 100;
+            }
+            else
+                cout << "很不幸，对方似乎穷困潦倒，并未掉落装备\n";
+            cout << "您获得了" << Wealth << "金币和" << experience << "经验";//杀死怪物获得金币和经验
+            p -> getWealth() += Wealth;
+            p -> getExperience() += experience;
+            
         }
-        void attack(Player& p){p.hurt(ATK);}
-        Goods* reward(int n){
-            if(glevel = low)
-                return lowReward[n];
-            else if(glevel = high)
-                return highReward[n];
-        }
+    }
+    else 
+        NHP -= ATK;
 
-        void hurt(double ATK,Player* p){} //受到伤害，HP=0时一定概率掉落随机装备
-
-
-};
-
-#endif
+}
