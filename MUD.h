@@ -163,6 +163,20 @@ class Monster: public Role{
 
 };
 
+class Room {
+private:
+	string Name;
+	Role *thisplace [10];
+	int num = 0;
+	Room *available[4];
+	int direction = 0;
+public:
+	Room(string name):Name(name){}
+	void setnpc(Role &);//设置地图中的npc
+	void setdoor(Room&);//设置地图的通道
+	void printroom();
+};
+
 class Store{
     private:
         enum Type{weapons,armors,drugs};
