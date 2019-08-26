@@ -4,6 +4,8 @@
 #include<string>
 #include<ctime>
 #include<iostream>
+#include<ctime>
+#include<cstdlib>
 using namespace std;
 
 class Role {
